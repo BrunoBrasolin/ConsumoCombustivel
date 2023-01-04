@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # SQLite
 *.db
+*.db-shm
+*.db-wal

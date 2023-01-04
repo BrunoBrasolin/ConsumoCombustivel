@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Net.Http.Headers;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -25,9 +26,7 @@ app.MapPost("/consumo/criar", async (Consumo consumo, DatabaseContext db) =>
     db.Consumos.Add(consumo);
     await db.SaveChangesAsync();
     return Results.Created($"/consumo/{consumo.Id}", consumo);
-}).WithName("CreateConsumo")
- .ProducesValidationProblem()
- .Produces<Consumo>(StatusCodes.Status201Created);
+}).WithName("CriarConsumo");
 
 app.MapGet("/consumo/media", async (DatabaseContext db) =>
 {
@@ -38,11 +37,38 @@ app.MapGet("/consumo/media", async (DatabaseContext db) =>
     Consumo ultimo = lista.First();
     Consumo penultimo = lista.Last();
 
-    double consumoMedio = (ultimo.Kilometragem - penultimo.Kilometragem) / ultimo.Litragem;
+    double consumoMedio = (ultimo.Quilometragem - penultimo.Quilometragem) / ultimo.Litragem;
 
     return Results.Ok(Math.Round(consumoMedio, 2));
-}).WithName("ObterMediaConsumo")
- .Produces(StatusCodes.Status200OK);
+
+}).WithName("ObterMediaConsumo");
+
+app.MapGet("/consumo/autonomia", async (DatabaseContext db) =>
+{
+    string retorno;
+    double media;
+    double tanque = 19.2;
+
+    try
+    {
+        retorno = await new HttpClient().GetStringAsync("https://localhost:44364/consumo/media");
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Falha ao obter média: {ex.Message}");
+    }
+
+    try
+    {
+        media = Convert.ToDouble(retorno.Replace(".", ","));
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Falha ao converter valor: {ex.Message}");
+    }
+
+    return Results.Ok(media * tanque);
+}).WithName("ObterAutonomia");
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -51,19 +77,17 @@ app.Run();
 
 class Consumo
 {
-    public Consumo(double valor, double capacidadeTotal, int kilometragem, double litragem, DateTime dataAbastecido)
+    public Consumo(double valor, int quilometragem, double litragem, DateTime dataAbastecido)
     {
         Valor = valor;
-        CapacidadeTotal = capacidadeTotal;
-        Kilometragem = kilometragem;
+        Quilometragem = quilometragem;
         Litragem = litragem;
         DataAbastecido = dataAbastecido;
     }
 
     public int Id { get; set; }
     public double Valor { get; set; }
-    public double CapacidadeTotal { get; set; }
-    public int Kilometragem { get; set; }
+    public int Quilometragem { get; set; }
     public double Litragem { get; set; }
     public DateTime DataAbastecido { get; set; }
 }
