@@ -49,7 +49,7 @@ app.UseSwaggerUI();
 
 app.Run();
 
-public class Consumo
+class Consumo
 {
     public Consumo(double valor, double capacidadeTotal, int kilometragem, double litragem, DateTime dataAbastecido)
     {
